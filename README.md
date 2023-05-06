@@ -1,6 +1,6 @@
 # crusmake
 
-Godot plugin with utilities for packaging Cruelty Squad mods. Includes support for including folders/files outside of the mod's folder, as well as configurable file extension exclusions.
+Godot plugin with utilities for packaging Cruelty Squad mods. Includes support for including folders/files outside of the mod's folder, configurable file extension exclusions, and automatic `.import` dependency resolution.
 
 ![config-panel](./media/README-01.png)
 
@@ -8,7 +8,7 @@ To access configuration, configuration saving, and packaging for a mod, right cl
 
 ![actions-context-menu](./media/README-context-menu.png)
 
-Package building steps and errors will be displayed in a popup window as well as Godot stdout:
+Package building steps and errors will be displayed in a popup window and stdout:
 
 ![build-output](./media/README-build-output.png)
 
