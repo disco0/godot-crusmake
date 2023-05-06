@@ -14,4 +14,4 @@ Package building steps and errors will be displayed in a popup window as well as
 
 # Install
 
-Clone/copy this repository into your project's addons folder in a folder named `crusmake`—e.g. `/path/to/project/addons/crusmake`, the Godot path `res://addons/crusmake`.
+Clone/copy this repository into your project's addons folder in a folder named `crusmake`—e.g. `/path/to/project/addons/crusmake`, `res://addons/crusmake` in your Godot project.
