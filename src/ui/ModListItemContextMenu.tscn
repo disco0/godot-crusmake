@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://addons/crusmake/src/ui/ModListItemContextMenu.gd" type="Script" id=1]
+
+[node name="ContextMenu" type="PopupMenu"]
+margin_right = 105.0
+margin_bottom = 74.0
+size_flags_horizontal = 0
+size_flags_vertical = 0
+items = [ "Build Archive", null, 0, false, false, 0, 0, null, "", false, "Config", null, 0, false, false, 1, 0, null, "", false, "Save", null, 0, false, false, 2, 0, null, "", false ]
+hide_on_checkable_item_selection = false
+script = ExtResource( 1 )
