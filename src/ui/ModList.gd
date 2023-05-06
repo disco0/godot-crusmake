@@ -17,7 +17,7 @@ signal export_requested(mod_data)
 
 
 const ListItem := preload("./ModListItem.tscn")
-const CruSHand := preload("res://Textures/Menu/mouse_cursor.png")
+const CruSHandPath := "res://Textures/Menu/mouse_cursor.png"
 const ListItemGroup := 'mod-list-item'
 
 # Used by parent scrollcontainer
@@ -25,10 +25,20 @@ var focus_hand_disabled := false
 var focus_hand: TextureRect
 var focus_hand_target: Control setget set_focus_hand_target
 var dock := EditorScript.new().get_editor_interface().get_file_system_dock()
+var CruSHand: Texture
 
 var edited_scene: bool = true
 
+
 #section lifecycle
+
+
+func _init() -> void:
+	# Get hand if in project
+	if ResourceLoader.exists(CruSHandPath):
+		CruSHand = load(CruSHandPath)
+		if not CruSHand as Texture:
+			CruSHand = null
 
 
 func _ready() -> void:
