@@ -17,6 +17,9 @@ const DefaultName = 'export_config.tres'
 
 export (Array, String, FILE) var included_project_paths: Array = [ ]
 export (Array, String) var excluded_file_exts: Array = [ "psd" ]
+export (Array, String) var excluded_patterns: Array = [ ]
+# @NOTE Consider bringing back as an override of global setting
+#export (bool) var delete_created_zip_directory := false
 
 
 #section lifecycle

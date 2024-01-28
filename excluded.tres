@@ -4,4 +4,4 @@
 
 [resource]
 script = ExtResource( 1 )
-excluded_dirs = [ "res://MOD_CONTENT/FakeCache" ]
+excluded_dirs = [ "res://MOD_CONTENT/FakeCache", "res://MOD_CONTENT/freelancer" ]

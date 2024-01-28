@@ -12,12 +12,20 @@ signal save_pressed(mod_data)
 
 #section members
 
+const GlobSearch := preload('../util/file_search_glob.gd')
 
+onready var excluded_exts_edit: TextEdit = $"%ExcludedExtsEdit"
+onready var excluded_dirs_edit: TextEdit = $"%ExcludedDirsEdit"
+onready var excluded_paths_preview: ItemList = $"%ExcludedResolvedPathList"
+onready var mod_path_preview_label: Label = $"%ModPathPreviewLabel"
+onready var mod_path_title_label: Label = $"%ModPathTitleLabel"
 onready var file_dialog: FileDialog = $"%IncludeFileDialog"
 onready var include_list: ItemList = $"%IncludeList"
 onready var add_paths_button: Button = $"%AddPathsButton"
 onready var remove_selected_paths_button: Button = $"%RemoveSelectedButton"
-onready var excluded_exts_edit: LineEdit = $"%ExcludedExtsEdit"
+onready var proj_path_preview_label: Label = $"%ProjectPathPreviewLabel"
+onready var proj_path_title_label: Label = $"%ProjectPathTitleLabel"
+onready var preserve_zip_content_dir_check: CheckBox = $"%PreserveZipContentDirCheck"
 
 var mod_data: CruSMakeModExport setget set_mod_data
 
@@ -31,6 +39,8 @@ func _ready() -> void:
 	if is_instance_valid(mod_data):
 		update_ui_data()
 
+	proj_path_preview_label.text = 'res://'
+	_on_IncludeList_nothing_selected()
 	stylize()
 
 
@@ -51,14 +61,40 @@ func set_mod_data(data: CruSMakeModExport) -> void:
 func update_ui_data() -> void:
 	assert(is_instance_valid(mod_data), 'Called update with invalid mod_data')
 
-	window_title = '%s' % [ mod_data.name ]
+	window_title = '%s Export Config' % [ mod_data.name ]
 	update_include_list()
-	excluded_exts_edit.text = PoolStringArray(mod_data.excluded_file_exts).join(',')
+
+	if 'excluded_file_exts' in mod_data:
+		excluded_exts_edit.text = PoolStringArray(mod_data.excluded_file_exts).join('\n')
+	excluded_dirs_edit.text = PoolStringArray(mod_data.excluded_patterns).join('\n')
+
+	# Assume in base of mod folder for now
+	if not mod_data.resource_local_to_scene and mod_data.get_path():
+		mod_path_preview_label.text = mod_data.get_path().get_base_dir()
+
+	if 'delete_created_zip_directory' in mod_data:
+		preserve_zip_content_dir_check.set_pressed_no_signal(not mod_data.delete_created_zip_directory)
+
+	update_excluded_preview()
 
 
 func stylize() -> void:
 	var mono_font: Font = get_font("expression", "EditorFonts").duplicate()
 	excluded_exts_edit.add_font_override("font", mono_font)
+	excluded_dirs_edit.add_font_override("font", mono_font)
+
+	#var title_font: Font = get_font("title", "EditorFonts").duplicate()
+	#for node in [ mod_path_title_label, proj_path_title_label ]:
+	#	node.add_font_override("font", title_font)
+
+	#var path_preview_color := get_color("disabled_font_color", "Editor")
+	var title_mono_font: Font = mono_font.duplicate()
+	#if title_mono_font is DynamicFont and title_font is DynamicFont:
+	#	(title_mono_font as DynamicFont).size = (title_font as DynamicFont).size
+	for node in [ mod_path_preview_label, proj_path_preview_label ]:
+		node.add_font_override("font", mono_font)
+		#node.add_color_override("font_color", path_preview_color)
+		node.modulate = Color(1, 1, 1, 0.6)
 
 
 func update_include_list() -> void:
@@ -104,11 +140,27 @@ func resolve_file_dialog_results(paths):
 	update_include_list()
 
 
+func update_excluded_preview() -> void:
+	excluded_paths_preview.clear()
+
+	if mod_data.excluded_patterns.empty():
+		return
+
+	var base_dir := mod_data.root_directory
+	var matches := GlobSearch.search_globs(
+			mod_data.excluded_patterns,
+			mod_data.root_directory,
+			true,
+			true)
+	for matched in matches:
+		excluded_paths_preview.add_item((matched as String).trim_prefix(base_dir))
+
+
 #section handlers
 
 
 func _on_AddPath_pressed() -> void:
-	print('[on:AddPath_pressed]')
+	#print('[on:AddPath_pressed]')
 	if not file_dialog.visible:
 		file_dialog.popup_centered_ratio(0.6)
 
@@ -168,7 +220,32 @@ func _on_RemoveSelectedButton_pressed() -> void:
 		include_list.remove_item(selected)
 
 
-func _on_ExcludedExtsEdit_text_entered(new_text: String) -> void:
-	var exts := excluded_exts_edit.text.split(',')
-	print('Updated ext list: %s' % [ exts.join(" | ")])
+func _on_ExcludedExtsEdit_text_changed() -> void:
+	var exts := PoolStringArray()
+	for line in excluded_exts_edit.text.replace('\r', '').split('\n'):
+		if line.empty() or exts.has(line):
+			continue
+		exts.push_back(line)
+
+	#print('Updated ext list: %s' % [ exts.join(" | ")])
+
 	mod_data.excluded_file_exts = Array(exts)
+	update_excluded_preview()
+
+
+func _on_ExcludedDirsEdit_text_changed() -> void:
+	var patterns := PoolStringArray()
+	for line in excluded_dirs_edit.text.replace('\r', '').split('\n'):
+		if line.empty() or patterns.has(line):
+			continue
+		patterns.push_back(line)
+
+	#print('Updated excluded patterns list: %s' % [ patterns.join(" | ")])
+
+	mod_data.excluded_patterns = Array(patterns)
+	update_excluded_preview()
+
+
+func _on_DeleteExportTmpCheck_toggled(button_pressed: bool) -> void:
+	if 'delete_created_zip_directory' in mod_data:
+		mod_data.delete_created_zip_directory = not button_pressed

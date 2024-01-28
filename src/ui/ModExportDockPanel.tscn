@@ -79,7 +79,7 @@ custom_constants/separation = 4
 [node name="ModListScroll" type="ScrollContainer" parent="Main/Sections"]
 unique_name_in_owner = true
 margin_right = 292.0
-margin_bottom = 652.0
+margin_bottom = 624.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource( 3 )
@@ -87,7 +87,7 @@ target_child = NodePath("MarginContainer")
 
 [node name="MarginContainer" type="MarginContainer" parent="Main/Sections/ModListScroll"]
 margin_right = 292.0
-margin_bottom = 652.0
+margin_bottom = 624.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 custom_constants/margin_right = 0
@@ -96,25 +96,25 @@ custom_constants/margin_left = 0
 [node name="ModList" type="VBoxContainer" parent="Main/Sections/ModListScroll/MarginContainer"]
 unique_name_in_owner = true
 margin_right = 292.0
-margin_bottom = 652.0
+margin_bottom = 624.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 custom_constants/separation = 6
 script = ExtResource( 2 )
 
 [node name="HSeparator" type="HSeparator" parent="Main/Sections"]
-margin_top = 656.0
+margin_top = 628.0
 margin_right = 292.0
-margin_bottom = 660.0
+margin_bottom = 632.0
 
 [node name="Config" type="VBoxContainer" parent="Main/Sections"]
-margin_top = 664.0
+margin_top = 636.0
 margin_right = 292.0
 margin_bottom = 712.0
 
 [node name="ExportDirConfig" type="VBoxContainer" parent="Main/Sections/Config"]
 margin_right = 292.0
-margin_bottom = 48.0
+margin_bottom = 76.0
 
 [node name="Label" type="Label" parent="Main/Sections/Config/ExportDirConfig"]
 visible = false
@@ -151,6 +151,28 @@ margin_right = 292.0
 margin_bottom = 20.0
 size_flags_horizontal = 3
 text = "Open Directory"
+
+[node name="PreserveZipContentDirCheckHBox" type="HBoxContainer" parent="Main/Sections/Config/ExportDirConfig"]
+margin_top = 52.0
+margin_right = 292.0
+margin_bottom = 76.0
+hint_tooltip = "When enabled, the folder used to generate the output archive will not be removed. Useful for making packs."
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="PreserveZipContentDirCheck" type="CheckBox" parent="Main/Sections/Config/ExportDirConfig/PreserveZipContentDirCheckHBox"]
+unique_name_in_owner = true
+margin_left = 11.0
+margin_right = 35.0
+margin_bottom = 24.0
+pressed = true
+
+[node name="Label" type="Label" parent="Main/Sections/Config/ExportDirConfig/PreserveZipContentDirCheckHBox"]
+margin_left = 39.0
+margin_top = 5.0
+margin_right = 280.0
+margin_bottom = 19.0
+text = "Preserve generated zip content folder"
 
 [node name="ExportInfoDialog" type="WindowDialog" parent="."]
 unique_name_in_owner = true
@@ -203,8 +225,12 @@ show_hidden_files = true
 [connection signal="mouse_exited" from="Main/Sections/ModListScroll/MarginContainer/ModList/CruSMakeModListItem_6" to="Main/Sections/ModListScroll/MarginContainer/ModList/CruSMakeModListItem_6" method="_on_mouse_exited"]
 [connection signal="mouse_entered" from="Main/Sections/ModListScroll/MarginContainer/ModList/CruSMakeModListItem_7" to="Main/Sections/ModListScroll/MarginContainer/ModList/CruSMakeModListItem_7" method="_on_mouse_entered"]
 [connection signal="mouse_exited" from="Main/Sections/ModListScroll/MarginContainer/ModList/CruSMakeModListItem_7" to="Main/Sections/ModListScroll/MarginContainer/ModList/CruSMakeModListItem_7" method="_on_mouse_exited"]
+[connection signal="mouse_entered" from="Main/Sections/ModListScroll/MarginContainer/ModList/CruSMakeModListItem_8" to="Main/Sections/ModListScroll/MarginContainer/ModList/CruSMakeModListItem_8" method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="Main/Sections/ModListScroll/MarginContainer/ModList/CruSMakeModListItem_8" to="Main/Sections/ModListScroll/MarginContainer/ModList/CruSMakeModListItem_8" method="_on_mouse_exited"]
 [connection signal="pressed" from="Main/Sections/Config/ExportDirConfig/ButtonsHBox/SelectExportDirButton" to="." method="_on_SelectExportDirButton_pressed"]
 [connection signal="pressed" from="Main/Sections/Config/ExportDirConfig/ButtonsHBox/OpenExportDirButton" to="." method="_on_OpenExportDirButton_pressed"]
+[connection signal="gui_input" from="Main/Sections/Config/ExportDirConfig/PreserveZipContentDirCheckHBox" to="." method="_on_PreserveZipContentDirCheckHBox_gui_input"]
+[connection signal="toggled" from="Main/Sections/Config/ExportDirConfig/PreserveZipContentDirCheckHBox/PreserveZipContentDirCheck" to="." method="_on_PreserveZipContentDirCheck_toggled"]
 [connection signal="hide" from="ExportInfoDialog/ExportProgressLog" to="." method="_on_ExportProgressLog_hide"]
 [connection signal="failed" from="ModExporter" to="." method="_on_ModExporter_failed"]
 [connection signal="progress_detail" from="ModExporter" to="." method="_on_ModExporter_progress_detail"]

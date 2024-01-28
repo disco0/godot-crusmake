@@ -7,6 +7,8 @@ extends Control
 
 
 const ExportDirSettingPath = "crusmake/config/export_dir"
+const ExportPreseveZipContentDirPath = "crusmake/config/preserve_archive_content_dir"
+const ExportPreseveZipContentDirDefault := false
 
 onready var bg_panel: Panel = $"%MainBG"
 onready var mod_list_scroll: ScrollContainerFixed = $"%ModListScroll"
@@ -16,11 +18,14 @@ onready var export_dialog := $"%ExportInfoDialog" as WindowDialog
 onready var export_progress_log := $"%ExportProgressLog"
 onready var export_dir_select_dialog: FileDialog = $"%ExportDirSelectDialog"
 onready var export_dir_edit: LineEdit = $"%ExportDirValueEdit"
+onready var preserve_zip_content_dir_check: CheckBox = $"%PreserveZipContentDirCheck"
 
-var output_dir: String = read_project_setting(
+var output_dir: String = ReadProjectSetting(
 		ExportDirSettingPath,
 		(ProjectSettings.globalize_path("res://") + '/../mod-export').simplify_path()
 ) setget set_output_dir
+var preserve_zip_content_dir: bool = get_preserve_zip_content_dir() \
+	setget set_preserve_zip_content_dir, get_preserve_zip_content_dir
 
 var roots := PoolStringArray(["res://MOD_CONTENT"])
 var base_stylebox: StyleBox
@@ -42,7 +47,7 @@ func _ready() -> void:
 			)
 	)
 	if editor:
-		print('Setting debug rect size.')
+		#print('Setting debug rect size.')
 		rect_size = Vector2(300, ProjectSettings.get_setting("display/window/size/height"))
 	else:
 		rect_size = get_parent_area_size()
@@ -51,13 +56,15 @@ func _ready() -> void:
 	if editor:
 		export_dir_edit.text = output_dir
 
+	preserve_zip_content_dir_check.set_pressed_no_signal(get_preserve_zip_content_dir())
+
 
 #section methods
 
 
 func build_mod_list() -> void:
 	for root in roots:
-		print("Scanning %s for mods" % [ root ])
+		#print("Scanning %s for mods" % [ root ])
 		for dir_path in FileSearch.search_pattern('*', root, false):
 			load_mod_data(dir_path)
 
@@ -74,6 +81,15 @@ func load_mod_data(mod_dir: String) -> void:
 						% [ saved_config_path ])
 
 	mod_list.push_dir(mod_dir)
+
+
+func set_preserve_zip_content_dir(value: bool) -> void:
+	ProjectSettings.set_setting(ExportPreseveZipContentDirPath, value)
+	preserve_zip_content_dir = value
+
+
+func get_preserve_zip_content_dir() -> bool:
+	return ReadProjectSetting(ExportPreseveZipContentDirPath, ExportPreseveZipContentDirDefault)
 
 
 func set_output_dir(value: String) -> void:
@@ -129,13 +145,6 @@ func stylize() -> void:
 	export_progress_log.add_font_override("italics_font", mono_font)
 
 
-func read_project_setting(config_name: String, default = null):
-	if ProjectSettings.has_setting(config_name):
-		return ProjectSettings.get_setting(config_name)
-	else:
-		return default
-
-
 #section logging
 
 
@@ -169,6 +178,8 @@ func _on_ModList_export_requested(mod_data: CruSMakeMod) -> void:
 	# FIXME: Window dialog title isn't aligned perfectly
 	export_dialog.window_title = "Exporting %s" % [ mod_data.name ]
 	export_dialog.popup_centered(Vector2(1200, 800))
+
+	exporter.preserve_zip_content_dir = preserve_zip_content_dir
 	exporter.start_export(mod_data, output_dir)
 
 
@@ -224,9 +235,13 @@ func _on_resized() -> void:
 		hand_target_check()
 
 
+func _on_PreserveZipContentDirCheck_toggled(button_pressed: bool) -> void:
+	set_preserve_zip_content_dir(button_pressed)
+
+
 # assumes called checked if used instances valid
 func hand_target_check() -> void:
-	print("Check")
+	#print("Check")
 	var hand := mod_list.focus_hand
 	var target := mod_list.focus_hand_target
 
@@ -241,8 +256,30 @@ func hand_target_check() -> void:
 		mod_list.update_focus_hand_target()
 	else:
 			#or not container_rect.intersects(target.get_global_rect()):
-		print("Hiding hand")
+		#print("Hiding hand")
 		mod_list.focus_hand_target = null
 		mod_list.update_focus_hand_target()
 		mod_list.focus_hand.call_deferred('hide')
 
+
+#section static
+
+
+static func ReadProjectSetting(config_name: String, default = null):
+	if ProjectSettings.has_setting(config_name):
+		return ProjectSettings.get_setting(config_name)
+	else:
+		return default
+
+
+func _on_PreserveZipContentDirCheckHBox_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mbe: InputEventMouseButton = event
+
+		if mbe.is_echo() or not mbe.pressed: return
+
+		if mbe.button_index == BUTTON_LEFT:
+			preserve_zip_content_dir_check.set_pressed_no_signal(
+				not preserve_zip_content_dir_check.pressed)
+
+			get_tree().set_input_as_handled()

@@ -25,6 +25,8 @@ signal progress_dyn(desc, type, color, newline)
 #section members
 
 
+const GlobSearch := preload('./util/file_search_glob.gd')
+const MODZIP_TEMP_DIR_NAME := 'mod_zip'
 const BlacklistedDirNames := PoolStringArray([".git"])
 enum DETAIL_TYPE {
 	PROGRESS,
@@ -32,6 +34,9 @@ enum DETAIL_TYPE {
 }
 
 var active: bool = false
+# @TODO: Properly hand over from export panel/caller instead of caller updating it before
+#        `start_export` is called
+var preserve_zip_content_dir := false
 
 
 #section lifecycle
@@ -51,6 +56,8 @@ func start_export(mod_data: CruSMakeModExport, output_dir: String) -> void:
 
 	# 4 yields
 	var tree := get_tree()
+
+	var remove_zip_content_dir := not preserve_zip_content_dir # mod_data.delete_created_zip_directory
 
 	var dir: Directory = Directory.new()
 	if not dir.dir_exists(output_dir):
@@ -72,9 +79,8 @@ func start_export(mod_data: CruSMakeModExport, output_dir: String) -> void:
 
 	# Effectively root of the inner archive
 	#    <content-zip>/mod.zip
-	# -> <content-zip>/mod_json/
-	var MODZIP_TEMP_DIR := 'mod_json'
-	var modzip_content_dir_path := archive_content_dir_path.plus_file(MODZIP_TEMP_DIR)
+	# -> <content-zip>/{MODZIP_TEMP_DIR_NAME}/
+	var modzip_content_dir_path := archive_content_dir_path.plus_file(MODZIP_TEMP_DIR_NAME)
 	log_step('modzip_content_dir_path:    %s' % [ modzip_content_dir_path ])
 
 	var modzip_imports_path := modzip_content_dir_path.plus_file('.import')
@@ -152,7 +158,16 @@ func start_export(mod_data: CruSMakeModExport, output_dir: String) -> void:
 	# Clean up mod json folder before zip
 	log_step('Removing excluded content from mod.zip')
 	yield(tree, "idle_frame")
-	yield(clean_mod_zip_dir(modzip_content_dir_path, mod_data.excluded_file_exts), "completed")
+	yield(clean_mod_zip_dir(
+				#modzip_content_dir_path,
+				# Using inner mod content path has expected behavior when using exclude patterns,
+				# trying it for now
+				archive_mod_inner_mod_dir,
+
+				mod_data.excluded_patterns
+				#,mod_data.excluded_file_exts
+				),
+			"completed")
 
 	# Copy all included project files
 	log_step('Copying included project paths')
@@ -255,14 +270,17 @@ func start_export(mod_data: CruSMakeModExport, output_dir: String) -> void:
 	log_section("Post-Build")
 
 	# Remove output archive content folder
-	log_step('Removing work folder at %s' % [ archive_content_dir_path ])
-	rm_err = OS.move_to_trash(archive_content_dir_path)
-	# NOTE: Letting this pass without failing for now as the zip is already created
-	if rm_err != OK:
-		log_warn("Failed to remove work folder content directory %s (error: %s)"
-						% [ archive_content_dir_path, rm_err ])
-		yield(tree, "idle_frame")
-		return
+	if remove_zip_content_dir:
+		log_step('Removing work folder at %s' % [ archive_content_dir_path ])
+		rm_err = OS.move_to_trash(archive_content_dir_path)
+		# NOTE: Letting this pass without failing for now as the zip is already created
+		if rm_err != OK:
+			log_warn("Failed to remove work folder content directory %s (error: %s)"
+							% [ archive_content_dir_path, rm_err ])
+			yield(tree, "idle_frame")
+			return
+	else:
+		log_step('Exported zip content folder at %s' % [ archive_content_dir_path ])
 
 	emit_signal("success", mod_data, output_archive_path)
 
@@ -288,41 +306,19 @@ func resolve_import_files(import_file: String) -> PoolStringArray:
 	return PoolStringArray(conf.get_value('deps', 'dest_files', PoolStringArray()))
 
 
-func clean_mod_zip_dir(root_dir: String, excluded_exts = []) -> void:
-	# TODO: add FileSearch.directory_pattern
-	var base_patterns := PoolStringArray([
-		# files in .git
-		'*/.git/*'
-	])
-	var patterns := base_patterns
+func clean_mod_zip_dir(root_dir: String, _excluded_patterns = [], _excluded_exts = []) -> void:
+	var excluded_patterns := PoolStringArray(_excluded_patterns)
+	var excluded_exts := PoolStringArray(_excluded_exts)
 
-	for pattern in patterns:
-		log_step(" - %s" % [ root_dir.plus_file(pattern) ])
-		yield(get_tree(), "idle_frame")
-
-		var results := FileSearch.search_pattern_full_path(pattern, root_dir, true, true).keys()
-		log_step("  Found %d matches" % [ results.size() ])
-
-		results.invert()
-		for result in results:
-			log_step("   - Removing: %s" % [ result ])
-			OS.move_to_trash(result)
-			yield(get_tree(), "idle_frame")
-
-	if typeof(excluded_exts) == TYPE_STRING_ARRAY:
-		excluded_exts = PoolStringArray(excluded_exts)
-
-	for ext in excluded_exts:
-		var results := FileSearch.search_pattern("*.%s" % [ ext ], root_dir, true, true).keys()
-		if results.empty(): continue
-
-		log_step('  - Found %d files with ext "%s"' % [ results.size(), ext ])
-		yield(get_tree(), "idle_frame")
-
-		for result in results:
-			log_step("    - Removing: %s" % [ result ])
-			OS.move_to_trash(result)
-			yield(get_tree(), "idle_frame")
+	log_step("%s" % [ 'Glob Exclusions:\n  %s'] % [ excluded_patterns.join('\n  ')])
+	var excludes := GlobSearch.search_globs(excluded_patterns,
+											root_dir,
+											true,
+											true)
+	excludes.invert()
+	for exclude in excludes:
+		log_step(" - %s" % [ exclude ])
+		OS.move_to_trash(exclude)
 
 	yield(get_tree(), "idle_frame")
 

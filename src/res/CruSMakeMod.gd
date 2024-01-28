@@ -46,7 +46,7 @@ func load_metadata() -> void:
 	var meta_file_path := root_directory.plus_file(ModMetadataFileName)
 	if not file.file_exists(meta_file_path):
 		invalid = true
-		push_warning('Metadata file not found for mod %s' % [ name ])
+		#push_warning('Metadata file not found for mod %s' % [ name ])
 		return
 
 	var fopen_err := file.open(meta_file_path, File.READ)
